@@ -1,0 +1,123 @@
+library IEEE;
+use IEEE.std_logic_1164.all;
+use IEEE.STD_LOGIC_ARITH.ALL;
+use IEEE.STD_LOGIC_UNSIGNED.ALL;
+
+entity State_Machine_Pagine is
+-- inizialmente ogni cifra è uguale a 10 che viene tramutato in underscore
+port (
+	n_en : in std_logic;
+	Clock : in std_logic;
+	press : in std_logic;
+	Rsp_on :in std_logic;
+	id_ok	: in std_logic;
+	psw_ok :in std_logic;
+	pt_ok : in std_logic;
+	en_id : in std_logic;
+	en_psw : in std_logic;
+	en_pt : in std_logic;
+	SelPag : out std_logic_vector(3 downto 0);
+	ins_id : out std_logic:= '0';
+	ins_psw: out std_logic:= '0';
+	ins_pt: out std_logic:= '0');
+end State_Machine_Pagine;
+
+architecture beh of State_Machine_Pagine is
+signal state : integer := 0;
+
+begin
+
+process(clock, press, id_ok, psw_ok, pt_ok)
+begin
+
+if (Clock'event and clock = '1') then
+if n_en = '1' then
+	state <= 0;
+else
+	if Rsp_on = '1' then
+		SelPag <= "1000";
+		state <= 0;
+	else
+		case state is 
+			when 0 =>
+				ins_id <= '0'; 
+				ins_psw <= '0'; 
+				ins_pt  <= '0'; 
+				SelPag <= "0000"; --premere un tasto per iniziare
+				if press = '1' then
+					state <= 1;
+				end if;
+			when 1 =>
+				SelPag <= "0001"; --inserire id: __
+				ins_id <= '1'; 
+				ins_psw <= '0'; 
+				ins_pt  <= '0'; 
+				
+				if en_id = '1' then
+				if id_ok = '1' then
+					state <= 3;
+				else
+					state <= 2;
+				end if;
+				end if;
+				
+			when 2 =>
+				SelPag <= "0010"; --id non riconosciuto
+				if press = '1' then
+					state <= 1;
+				end if;
+				
+			when 3 =>
+				SelPag <= "0011"; --inserire password: __
+				ins_psw <= '1';
+				ins_id <= '0'; 
+				ins_pt <= '0'; 
+				if en_psw = '1' then
+				if psw_ok = '1' then
+					state <= 5;
+				else 
+					state <= 4;
+				end if;
+				end if;
+				
+			when 4 =>
+				SelPag <= "0100"; --password errata
+				if press = '1' then
+					state <= 3;
+				end if;
+				
+			when 5 =>
+				SelPag <= "0101"; --inserire porta: __
+				ins_pt <= '1';
+				ins_id <= '0'; 
+				ins_psw <= '0'; 
+				
+				if en_pt = '1' then
+				if pt_ok = '1' then
+					state <= 7;
+				else 
+					state <= 6;
+				end if;
+				end if;
+			when 6 =>
+				SelPag <= "0110"; --porta errata
+				if press = '1' then
+					state <= 5;
+				end if;
+			when 7 =>
+				SelPag <= "0111"; --porta attiva
+				if press = '1' then
+					state <= 0;
+				end if;			
+			when others =>
+				SelPag <= "1000";
+		end case;
+
+	end if;
+	end if;
+end if;
+end process;
+
+end beh;
+
+

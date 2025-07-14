@@ -1,0 +1,97 @@
+library ieee;
+use ieee.std_logic_1164.all;
+use IEEE.STD_LOGIC_ARITH.ALL;
+use IEEE.STD_LOGIC_UNSIGNED.ALL;
+
+entity Writer is
+	Port(
+	Clk : in STD_LOGIC; -- Clock
+	Rx_Ready : in STD_LOGIC; -- Rx_Ready
+	Rx_Data : in STD_LOGIC_VECTOR (7 downto 0); -- Rx_Data
+   SM : in STD_LOGIC; -- Safe Mode. (SM <= 1 : Safe Mode attiva, SM <= 0 : Safe Mode off)
+	Add : out STD_LOGIC_VECTOR (7 downto 0);  -- Address, Indirizzo di memoria della RAM
+	Data : out STD_LOGIC_VECTOR (7 downto 0)  -- Data, Dati da salvare in RAM
+	WE  : out STD_LOGIC;  -- Write Enable
+	);
+
+end Writer;
+
+architecture beh of Writer is
+type STATE_TYPE is (Idle, Wait_Start, WaitData, StartWrite, EndWrite, Safe_Mode);
+signal state : STATE_TYPE := Idle;
+signal count : std_logic_vector (3 downto 0);
+signal addr : std_logic_vector (3 downto 0);
+signal d74 : std_logic_vector (3 downto 0);
+begin
+process (Clk) is
+begin
+d74 <= Rx_Data(7 downto 4);
+
+	if (Clk'event and Clk = '1') then
+		case state is
+		
+		when Idle =>
+			count <= "0000";
+			addr <= "0000";
+			if Rx_Ready = '1' then
+		   	state <= Wait_Start;
+			end if;
+
+			if ModR = '1' then
+				state <= Mod_Ridotta;
+			end if;
+			
+		when Wait_Start =>
+			if d74 = 10 then
+				addr <= Rx_Data(3 downto 0);
+				state <= WaitData;
+			else state <= Idle;
+			end if;
+			
+			if ModR = '1' then
+				state <= Mod_Ridotta;
+			end if;
+		
+		when WaitData =>
+			if Rx_Ready = '1' then
+				state <= StartWrite;
+			end if;
+			
+			if ModR = '1' then
+				state <= Mod_Ridotta;
+			end if;
+			
+		when StartWrite =>
+			if d74 > 11 then
+				state <= WaitData;
+			elsif d74 < 10 then
+			   Add <= addr & count;
+		   	Data <= Rx_Data;
+			   WE <= '1';
+				state <= EndWrite;
+			else
+				state <= Idle; 
+			end if;
+
+			if ModR = '1' then
+				state <= Mod_Ridotta;
+			end if;
+		
+		when EndWrite =>
+			WE <= '0';		
+			count <= count + 1;
+			state <= WaitData;
+			if ModR = '1' then
+				state <= Mod_Ridotta;
+			end if;
+		
+		when Mod_Ridotta =>
+			if ModR = '0' then
+				state <= Idle;
+			end if;
+		
+		end case;
+	end if;
+end process;
+
+end beh;

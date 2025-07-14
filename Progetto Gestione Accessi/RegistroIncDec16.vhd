@@ -1,0 +1,33 @@
+library ieee;
+use ieee.std_logic_1164.all;
+entity RegistroIncDec16 is
+ Port( Din : in STD_LOGIC_VECTOR (15 downto 0);
+	Dout : out STD_LOGIC_VECTOR (15 downto 0);
+	clk : in STD_LOGIC;
+	IE : in STD_LOGIC);
+end RegistroIncDec16;
+-- valore interno del registro inizializzato a 0
+
+architecture beh of RegistroIncDec16 is
+	signal InternalValue :STD_LOGIC_VECTOR (15 downto 0):=(OTHERS => '0');
+	signal NextValue :STD_LOGIC_VECTOR (15 downto 0);
+	begin
+	process (clk) 
+	begin 
+		IF (clk='1' and clk'event) THEN
+			InternalValue <= NextValue;
+		END IF;
+	 end process;
+	
+	process (IE,Din, InternalValue) is
+	begin 
+	-- controllo input enable (vince su tutto)
+		NextValue <= InternalValue ;
+		if (IE='1') then
+			NextValue <= Din; -- input da Din
+		end if;
+	 end process;
+	 
+	 -- attivazione tristate in uscita
+	Dout <= InternalValue ;
+end architecture beh;

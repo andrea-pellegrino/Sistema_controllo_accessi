@@ -1,0 +1,23 @@
+library ieee;
+use ieee.std_logic_1164.all;
+
+-- Decoder 2 to 4
+
+entity dec2_4 is
+ Port (Vcc: in std_logic;
+			s1 : in std_logic;
+			s0 : in std_logic;
+		y : out std_logic_vector(3 downto 0));
+end dec2_4;
+
+architecture Behavioral of dec2_4 is
+signal ens: std_logic_vector(2 downto 0);
+begin
+ens <= Vcc & s1 & s0;
+with ens select
+	y  <= "0001" when "100",
+		 	"0010" when "101",
+		  	"0100" when "110",
+		  	"1000" when "111",
+			"0000" when others;
+end Behavioral;
